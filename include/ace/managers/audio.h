@@ -6,12 +6,21 @@ extern "C" {
 #endif
 
 #include <ace/types.h>
+#ifdef AMIGA
+
 #include <hardware/dmabits.h> // DMAF_* flags
 
 #define AUDIO_CHANNEL_0 DMAB_AUD0
 #define AUDIO_CHANNEL_1 DMAB_AUD1
 #define AUDIO_CHANNEL_2 DMAB_AUD2
 #define AUDIO_CHANNEL_3 DMAB_AUD3
+#else
+
+#define AUDIO_CHANNEL_0 
+#define AUDIO_CHANNEL_1 
+#define AUDIO_CHANNEL_2 
+#define AUDIO_CHANNEL_3 
+#endif
 
 #define AUDIO_VOLUME_MAX 64
 #define AUDIO_REPLAY_CONTINUOUS -1

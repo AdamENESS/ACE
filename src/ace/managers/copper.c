@@ -844,4 +844,7 @@ UBYTE copRawDisableSprites(tCopList *pList, UBYTE ubSpriteMask, UWORD uwCmdOffs)
 	return ubCmdCnt;
 }
 
+#else
+void copCreate(void) {}
+void copDestroy(void) {}
 #endif // AMIGA

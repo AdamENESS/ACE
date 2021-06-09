@@ -8,8 +8,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#ifdef AMIGA
 #include <graphics/gfxbase.h> // Required for GfxBase
+#endif
 #include <ace/types.h>
 #include <ace/utils/custom.h>
 
@@ -17,9 +18,21 @@ extern "C" {
 
 //------------------------------------------------------------------------ TYPES
 
+
+#ifdef AMIGA
 typedef void (*tAceIntHandler)(
 	REGARG(volatile tCustom *pCustom, "a0"), REGARG(volatile void *pData, "a1")
 );
+#else
+#define tCustom void
+
+	typedef void(*tAceIntHandler)(
+		tCustom *pCustom, void* pData
+);
+
+
+
+#endif
 
 //-------------------------------------------------------------------- FUNCTIONS
 

@@ -22,6 +22,7 @@ extern "C" {
 #define MEMF_CLEAR   2
 #define MEMF_PUBLIC  4
 #define MEMF_LARGEST 8
+#define MEMF_ANY	 16
 #endif // AMIGA
 
 #include <ace/types.h>
@@ -45,9 +46,13 @@ void _memDestroy(void);
 
 void *_memAllocDbg(ULONG ulSize, ULONG ulFlags, UWORD uwLine, const char *szFile);
 void _memFreeDbg(void *pMem, ULONG ulSize, UWORD uwLine, const char *szFile);
+#ifdef AMIGA
 void *_memAllocRls(ULONG ulSize, ULONG ulFlags) __attribute__((malloc));
-void _memFreeRls(void *pMem, ULONG ulSize);
+#else
+void *_memAllocRls(ULONG ulSize, ULONG ulFlags);
 
+#endif
+void _memFreeRls(void *pMem, ULONG ulSize);
 void _memCheckTrashAtAddr(void *pMem, UWORD uwLine, const char *szFile);
 
 void _memCheckIntegrity(UWORD uwLine, const char *szFile);

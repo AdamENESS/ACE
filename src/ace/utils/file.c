@@ -4,8 +4,10 @@
 
 #include <ace/utils/file.h>
 #include <stdarg.h>
+#ifdef AMIGA
 #include <dos/dos.h>
 #include <clib/dos_protos.h>
+#endif // AMIGA
 #include <ace/managers/system.h>
 #include <ace/managers/log.h>
 

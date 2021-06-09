@@ -7,7 +7,10 @@
 #include <ace/managers/memory.h>
 #include <ace/managers/system.h>
 #include <ace/utils/custom.h>
+#ifdef AMIGA
 #include <hardware/intbits.h> // INTB_PORTS
+#endif
+
 #define KEY_RELEASED_BIT 1
 
 #if defined ACE_DEBUG
@@ -40,6 +43,7 @@ void keySetState(UBYTE ubKeyCode, UBYTE ubKeyState) {
  * Gets key press/release from kbd controller and confirms reception
  * by handshake
  */
+#ifdef AMIGA
 FN_HOTSPOT
 void INTERRUPT keyIntServer(
 	REGARG(volatile tCustom *pCustom, "a0"),
@@ -74,7 +78,7 @@ void INTERRUPT keyIntServer(
 	g_pCia[CIA_A]->cra &= ~CIACRA_SPMODE;
 	INTERRUPT_END;
 }
-
+#endif
 /* Globals */
 tKeyManager g_sKeyManager;
 
@@ -99,7 +103,9 @@ void keyCreate(void) {
 		logWrite("ERR: Keyboard already initialized!\n");
 	}
 #endif
-	systemSetCiaInt(CIA_A, CIAICRB_SERIAL, keyIntServer, &g_sKeyManager);
+	#ifdef AMIGA
+systemSetCiaInt(CIA_A, CIAICRB_SERIAL, keyIntServer, &g_sKeyManager);
+#endif // AMIGA
 	logBlockEnd("keyCreate()");
 }
 
@@ -111,7 +117,9 @@ void keyDestroy(void) {
 		logWrite("ERR: Keyboard was initialized multiple times!\n");
 	}
 #endif
-	systemSetCiaInt(CIA_A, CIAICRB_SERIAL, 0, 0);
+	#ifdef AMIGA
+systemSetCiaInt(CIA_A, CIAICRB_SERIAL, 0, 0);
+#endif // AMIGA
 	logBlockEnd("keyDestroy()");
 }
 

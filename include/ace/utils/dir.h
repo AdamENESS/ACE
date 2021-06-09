@@ -8,14 +8,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#ifdef AMIGA
 #include <dos/dos.h>
 #include <clib/dos_protos.h>
+#endif
 #include <ace/types.h>
 
 typedef struct _tDir {
+	#ifdef AMIGA
 	BPTR pLock;
 	struct FileInfoBlock sFileBlock;
+#else
+	const char* sPath;
+	UWORD uwFileIndex;
+#endif
 } tDir;
 
 /**

@@ -18,9 +18,9 @@ set(VER_Y 0)
 set(VER_Z 1)
 set(VER_FULL "${VER_X}.${VER_Y}.${VER_Z}")
 
-if(NOT AMIGA)
-	message(SEND_ERROR "[ACE] This project only compiles for Amiga")
-endif()
+# if(NOT AMIGA)
+# 	message(SEND_ERROR "[ACE] This project only compiles for Amiga")
+# endif()
 
 file(GLOB_RECURSE SOURCES src/ace/*.c src/fixmath/*.c)
 file(GLOB HEADERS_ACE include/ace/*.h)
@@ -40,13 +40,22 @@ set(TARGET_NAME ${PROJECT_NAME_LOWER})
 add_library(${TARGET_NAME} OBJECT ${SOURCES} ${HEADERS})
 
 set(CMAKE_C_STANDARD 11)
-target_compile_definitions(${TARGET_NAME} PUBLIC AMIGA)
-target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra)
+
+ if(AMIGA)
+ target_compile_definitions(${TARGET_NAME} PUBLIC AMIGA)
+ target_compile_options(${TARGET_NAME} PRIVATE -Wall -Wextra)
+else()
+
+target_compile_definitions(${TARGET_NAME} PUBLIC WIN32)
+target_compile_options(${TARGET_NAME} PRIVATE)
+
+ endif()
+
 target_compile_options(${TARGET_NAME} PUBLIC -fomit-frame-pointer)
-if(ACE_DEBUG)
+#if(ACE_DEBUG)
 	# Add ACE debugging features to release build
 	target_compile_definitions(${TARGET_NAME} PUBLIC ACE_DEBUG)
-endif()
+#endif()
 if(M68K_COMPILER MATCHES "Bartman")
 	target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include/bartman)
 	file(GLOB SOURCES_BARTMAN src/mini_std/*.c src/bartman/*.c src/bartman/*.s)

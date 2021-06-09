@@ -2,7 +2,11 @@
 #define _MINI_STD_STRING_H_
 
 #include <stddef.h>
+#ifdef AMIGA
 #include <../sys-include/string.h>
+#else
+#define restrict 
+#endif
 
 #ifdef __cplusplus
 #define restrict 

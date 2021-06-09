@@ -2,10 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#ifdef AMIGA
 #include <proto/exec.h> // Bartman's compiler needs this
 #include <proto/misc.h> // Bartman's compiler needs this
 #include <resources/misc.h> // OS-friendly parallel joys: misc.resource
 #include <clib/misc_protos.h> // OS-friendly parallel joys: misc.resource
+#endif
 #include <ace/managers/joy.h>
 #include <ace/managers/log.h>
 #include <ace/managers/system.h>
@@ -14,6 +16,7 @@
 #if defined ACE_DEBUG
 static UBYTE s_bInitCount = 0;
 #endif
+#ifdef AMIGA
 
 /* Globals */
 tJoyManager g_sJoyManager;
@@ -194,3 +197,66 @@ void joyDisableParallel(void) {
 UBYTE joyIsParallelEnabled(void) {
 	return s_isParallelEnabled;
 }
+#else
+
+void joyOpen(void)
+{
+
+}
+
+/**
+ * @brief Enables additional joystricks through parallel adapter.
+ *
+ * @return 1 on success, otherwise 0.
+ */
+UBYTE joyEnableParallel(void)
+{
+
+}
+
+/**
+ * @brief Disables additional joysticks through parallel adapter.
+ */
+void joyDisableParallel(void)
+{
+
+}
+
+UBYTE joyIsParallelEnabled(void)
+{
+	return 0;
+}
+
+void joySetState(UBYTE ubJoyCode, UBYTE ubJoyState)
+{
+
+}
+
+UBYTE joyCheck(UBYTE ubJoyCode)
+{
+	return 0;
+}
+
+
+UBYTE joyUse(UBYTE ubJoyCode)
+{
+	return 0;
+}
+
+void joyProcess(void)
+{
+
+}
+
+/**
+ * @brief Finishes work of joy manager.
+ * This will also call joyDisableParallel() if needed.
+ *
+ * @see joyDisableParallel()
+ */
+void joyClose(void)
+{
+
+}
+
+#endif

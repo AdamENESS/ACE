@@ -2,8 +2,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#ifdef AMIGA
 #include <proto/exec.h> // Bartman's compiler needs this
 #include <proto/dos.h> // Bartman's compiler needs this
+#endif
+
 #include <ace/managers/memory.h>
 #include <ace/managers/system.h>
 #include <ace/managers/log.h>
@@ -118,6 +121,8 @@ static ULONG _memEntryDelete(
 static void memEntryCheckTrash(
 	const tMemEntry *pEntry, UWORD uwLine, const char *szFile
 ) {
+
+	#ifdef AMIGA
 	UBYTE *pCafe = (UBYTE*)(pEntry->pAddr - 4*sizeof(UBYTE));
 	UBYTE *pDead = (UBYTE*)(pEntry->pAddr + pEntry->ulSize);
 	if(pCafe[0] != 0xCA || pCafe[1] != 0xFE || pCafe[2] != 0xBA || pCafe[3] != 0xBE) {
@@ -132,11 +137,13 @@ static void memEntryCheckTrash(
 			pEntry->uwId, pEntry->pAddr, szFile, uwLine
 		);
 	}
+#endif
 }
 
 //---------------------------------------------------------------------- MEM FNS
 
 void _memCheckIntegrity(UWORD uwLine, const char *szFile) {
+#ifdef AMIGA
 	tMemEntry *pEntry = s_pMemTail;
 	while(pEntry) {
 		memEntryCheckTrash(pEntry, uwLine, szFile);
@@ -150,6 +157,7 @@ void _memCheckIntegrity(UWORD uwLine, const char *szFile) {
 		logWrite("[MEM] out of stack bounds!\n");
 		while(1) {}
 	}
+#endif
 }
 
 void _memCreate(void) {
@@ -182,7 +190,7 @@ void *_memAllocDbg(
 		logWrite("[MEM] ERR: zero alloc size! (%s:%u)\n", szFile, uwLine);
 		return 0;
 	}
-	void *pAddr;
+	BYTE *pAddr;
 	pAddr = _memAllocRls(ulSize + 2 * sizeof(ULONG), ulFlags);
 	if(!pAddr) {
 		logWrite(
@@ -232,6 +240,10 @@ void *_memAllocRls(ULONG ulSize, ULONG ulFlags) {
 	}
 	#else
 	pResult =  malloc(ulSize);
+	if (ulFlags & MEMF_CLEAR)
+	{
+		memset(pResult, 0, ulSize);
+	}
 	#endif // AMIGA
 	systemUnuse();
 	return pResult;

@@ -89,6 +89,16 @@ typedef int32_t LONG;
 #define FAR __far
 #define FN_HOTSPOT __attribute__((hot))
 #define FN_COLDSPOT __attribute__((cold))
+#elif defined(WIN32)
+#define __attribute__ (x) 
+#define INTERRUPT
+#define INTERRUPT_END do {} while(0)
+#define HWINTERRUPT
+#define UNUSED_ARG 
+#define REGARG(arg, reg) arg
+#define CHIP
+#define FAR
+#define FN_HOTSPOT
 #else
 #error "Compiler not supported!"
 #endif

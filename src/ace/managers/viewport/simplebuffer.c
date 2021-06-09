@@ -3,7 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <ace/managers/viewport/simplebuffer.h>
+#ifdef AMIGA
 #include <proto/exec.h>
+#endif
 #include <ace/utils/tag.h>
 #include <ace/utils/extview.h>
 
@@ -329,5 +331,35 @@ UBYTE simpleBufferGetRawCopperlistInstructionCount(UBYTE ubBpp) {
 	);
 	return ubInstructionCount;
 }
+
+#else
+
+tSimpleBufferManager *simpleBufferCreate(void *pTags, ...)
+{
+
+}
+
+/**
+*  @brief Sets new bitmap to be displayed by buffer manager.
+*  If there was buffer created by manager, be sure to intercept & free it.
+*  Also, both buffer bitmaps must have same BPP, as difference would require
+*  copBlock realloc, which is not implemented.
+*  @param pManager The buffer manager, which buffer is to be changed.
+*  @param pBitMap  New bitmap to be used by manager.
+*
+*  @todo Realloc copper buffer to reflect BPP change.
+*/
+void simpleBufferSetBitmap(tSimpleBufferManager *pManager, tBitMap *pBitMap);
+
+void simpleBufferDestroy(tSimpleBufferManager *pManager);
+
+void simpleBufferProcess(tSimpleBufferManager *pManager);
+
+UBYTE simpleBufferIsRectVisible(
+	tSimpleBufferManager *pManager,
+	UWORD uwX, UWORD uwY, UWORD uwWidth, UWORD uwHeight
+);
+
+UBYTE simpleBufferGetRawCopperlistInstructionCount(UBYTE ubBpp);
 
 #endif // AMIGA

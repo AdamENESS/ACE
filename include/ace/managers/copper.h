@@ -270,7 +270,9 @@ static inline void copSetMoveVal(tCopMoveCmd *pMoveCmd, UWORD uwValue) {
 UBYTE copRawDisableSprites(
 	tCopList *pList, UBYTE ubSpriteMask, UWORD uwCmdOffs
 );
-
+#else
+void copCreate(void);
+void copDestroy(void);
 #endif // AMIGA
 
 #ifdef __cplusplus

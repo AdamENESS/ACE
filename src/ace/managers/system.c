@@ -1,6 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#ifdef AMIGA
 
 #include <ace/managers/system.h>
 #include <stdlib.h>
@@ -788,3 +789,79 @@ void systemDump(void) {
 
 	// logBlockEnd("systemDump()");
 }
+#else
+#include <ace/managers/system.h>
+LONG g_sysCnt;
+/**
+ * @brief The startup code to give ACE somewhat initial state.
+ * Prepares OS for enabling / disabling. Disables as much of it as possible,
+ * but leaves it in enabled state.
+ * This is the first thing you should call in your ACE app.
+ */
+void systemCreate(void)
+{
+	g_sysCnt = 0;
+}
+
+/**
+ * @brief Cleans up after app, restores anything that systemCreate took over.
+ * After running the function, the system to its state before running your app.
+ * This is the last thing you should call in your ACE app.
+ */
+void systemDestroy(void)
+{
+}
+
+void systemKill(const char *szMsg)
+{
+	exit(0);
+}
+
+void systemSetInt(
+	UBYTE ubIntNumber, tAceIntHandler pHandler, volatile void *pIntData
+)
+{
+
+}
+
+void systemSetCiaInt(
+	UBYTE ubCia, UBYTE ubIntBit, tAceIntHandler pHandler, volatile void *pIntData
+)
+{
+
+}
+
+void systemUse(void)
+{
+	g_sysCnt++;
+}
+
+void systemUnuse(void)
+{
+	g_sysCnt--;
+}
+
+UBYTE systemIsUsed(void)
+{
+	return g_sysCnt > 0 ? 1 : 0;
+}
+
+void systemDump(void)
+{
+
+}
+
+void systemSetDmaBit(UBYTE ubDmaBit, UBYTE isEnabled)
+{
+
+}
+void systemSetDmaMask(UWORD uwDmaMask, UBYTE isEnabled)
+{
+
+}
+
+void systemSetTimer(UBYTE ubCia, UBYTE ubTimer, UWORD uwTicks)
+{
+
+}
+#endif

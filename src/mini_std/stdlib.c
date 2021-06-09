@@ -24,3 +24,8 @@ void qsort(
 	s_qsortComp = comp;
 	sort_r(ptr, count, size, qsortEmu, 0);
 }
+
+int abs (int i)
+{
+  return i < 0 ? -i : i;
+}

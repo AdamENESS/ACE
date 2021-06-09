@@ -13,8 +13,10 @@
 #include <ace/managers/log.h>
 #include <ace/managers/system.h>
 #include <ace/utils/custom.h>
+#ifdef AMIGA
 #include <hardware/intbits.h>
 #include <hardware/dmabits.h>
+#endif // AMIGA
 
 //----------------------------------------------------------------------- CONFIG
 
@@ -27,8 +29,11 @@
 
 // If set, uses audio interrupt handlers instead of polling intbits for checking
 // if channel is idle. May be better in the long run for os-friendly use. Buggy!
-// #define PTPLAYER_USE_AUDIO_INT_HANDLERS
-
+#if defined(AMIGA)
+	//#define PTPLAYER_USE_AUDIO_INT_HANDLERS
+#else
+	#define PTPLAYER_USE_AUDIO_INT_HANDLERS
+#endif
 //---------------------------------------------------------------------- DEFINES
 
 // Patterns - each has 64 rows, each row has 4 notes, each note has 4 bytes.
@@ -65,6 +70,17 @@ typedef struct _tModFileHeader {
 	// MOD pattern/sample data follows
 } tModFileHeader;
 
+#if !defined(AMIGA)
+typedef struct AudChannel
+{
+	ULONG ac_vol;
+	ULONG ac_per;
+	ULONG ac_len;
+	void* ac_ptr;
+
+}
+tChannelRegs;
+#endif
 typedef struct AudChannel tChannelRegs;
 
 /**
@@ -1075,10 +1091,12 @@ static void startSfx(
 	logWrite("startsfx: %p:%hu\n", pChannelData->n_sfxptr, uwLen);
 	// play new sound effect on this channel
 	systemSetDmaMask(pChannelData->n_dmabit, 0);
+#ifdef AMIGA
 	pChannelReg->ac_ptr = pChannelData->n_sfxptr;
 	pChannelReg->ac_len = uwLen;
 	pChannelReg->ac_per = pChannelData->n_sfxper;
 	pChannelReg->ac_vol = pChannelData->n_sfxvol;
+#endif // AMIGA
 
 	// Save repeat and period for TimerB interrupt.
 	// After the sample has fully played back and there is no repeat,
@@ -1223,13 +1241,19 @@ static void mt_playvoice(
 static void mt_checkfx(
 	tChannelStatus *pChannelData, volatile tChannelRegs *pChannelReg
 ) {
+
 	if(pChannelData->ubSfxPriority) {
 		UWORD uwLen = pChannelData->n_sfxlen;
 		if(uwLen) {
 			startSfx(uwLen, pChannelData, pChannelReg);
 		}
 		if(uwLen || (
+
+#ifdef AMIGA
 			!isChannelDone(pChannelData) || (g_pCustom->dmaconr & pChannelData->n_dmabit)
+#else
+			!isChannelDone(pChannelData) || (pChannelData->n_dmabit)
+#endif // AMIGA
 			// TODO: why not checking mt_dmaon?
 		)) {
 			// Channel is blocked, only check some E-commands
@@ -1295,12 +1319,14 @@ static inline void ptplayerEnableMainHandler(UBYTE isEnabled) {
 		systemSetInt(INTB_VERTB, 0, 0);
 	}
 #else
+#ifdef AMIGA
 	if(isEnabled) {
 		systemSetCiaInt(CIA_B, CIAICRB_TIMER_A, mt_TimerAInt, 0);
 	}
 	else {
 		systemSetCiaInt(CIA_B, CIAICRB_TIMER_A, 0, 0);
 	}
+#endif // AMIGA
 #endif
 }
 
@@ -1334,6 +1360,7 @@ static void intSetRep(volatile tCustom *pCustom) {
 	// clear EXTER and possible audio interrupt flags
 
 	clearAudioDone();
+	#ifdef AMIGA
 
 	// Set repeat sample pointers and lengths
 	setChannelRepeat(&pCustom->aud[0], &mt_chan[0]);
@@ -1344,6 +1371,7 @@ static void intSetRep(volatile tCustom *pCustom) {
 	// restore TimerA music interrupt vector
 	ptplayerEnableMainHandler(1);
 	systemSetCiaInt(CIA_B, CIAICRB_TIMER_B, 0, 0);
+#endif // AMIGA
 }
 
 // One-shot TimerB interrupt to set repeat samples after another 576 ticks.
@@ -1361,13 +1389,15 @@ static void mt_TimerBsetrep(
 static void intDmaOn(volatile tCustom *pCustom) {
 	// pCustom->color[0] = 0x00F;
 	// Restart timer to set repeat, enable DMA
-	g_pCia[CIA_B]->crb = CIACRB_LOAD | CIACRB_RUNMODE | CIACRB_START;
+	#ifdef AMIGA
+g_pCia[CIA_B]->crb = CIACRB_LOAD | CIACRB_RUNMODE | CIACRB_START;
 	systemSetDmaMask(mt_dmaon, 1);
 
 	// set level 6 interrupt to mt_TimerBsetrep
 	ptplayerEnableMainHandler(0);
 	systemSetCiaInt(CIA_B, CIAICRB_TIMER_B, mt_TimerBsetrep, 0);
 	// pCustom->color[0] = 0x000;
+#endif // AMIGA
 }
 
 // One-shot TimerB interrupt to enable audio DMA after 576 ticks.
@@ -1400,6 +1430,7 @@ static void chan_sfx_only(
 // Plays sound effects on free channels.
 void mt_sfxonly(void) {
 	mt_dmaon = 0;
+	#ifdef AMIGA
 	chan_sfx_only(&g_pCustom->aud[0], &mt_chan[0]);
 	chan_sfx_only(&g_pCustom->aud[1], &mt_chan[1]);
 	chan_sfx_only(&g_pCustom->aud[2], &mt_chan[2]);
@@ -1410,6 +1441,7 @@ void mt_sfxonly(void) {
 		systemSetCiaInt(CIA_B, CIAICRB_TIMER_B, mt_TimerBdmaon, 0);
 		g_pCia[CIA_B]->crb = CIACRB_LOAD | CIACRB_RUNMODE | CIACRB_START; // load/start timer B, one-shot
 	}
+#endif // AMIGA
 }
 
 /**
@@ -1421,6 +1453,7 @@ static void mt_music(void) {
 	mt_dmaon = 0;
 	if(++mt_Counter < mt_Speed) {
 		// no new note, just check effects, don't step to next position
+#ifdef AMIGA
 		mt_checkfx(&mt_chan[0], &g_pCustom->aud[0]);
 		mt_checkfx(&mt_chan[1], &g_pCustom->aud[1]);
 		mt_checkfx(&mt_chan[2], &g_pCustom->aud[2]);
@@ -1432,6 +1465,7 @@ static void mt_music(void) {
 			systemSetCiaInt(CIA_B, CIAICRB_TIMER_B, mt_TimerBdmaon, 0);
 			g_pCia[CIA_B]->crb = CIACRB_LOAD | CIACRB_RUNMODE | CIACRB_START; // load/start timer B, one-shot
 		}
+#endif // AMIGA
 	}
 	else {
 		// handle a new note
@@ -1445,24 +1479,30 @@ static void mt_music(void) {
 			tModVoice *pLineVoices = (tModVoice*)&pCurrentPattern[mt_PatternPos];
 			printVoices(pLineVoices);
 
-			// play new note for each channel, apply some effects
+			#ifdef AMIGA
+// play new note for each channel, apply some effects
 			mt_playvoice(&mt_chan[0], &g_pCustom->aud[0], &pLineVoices[0]);
 			mt_playvoice(&mt_chan[1], &g_pCustom->aud[1], &pLineVoices[1]);
 			mt_playvoice(&mt_chan[2], &g_pCustom->aud[2], &pLineVoices[2]);
 			mt_playvoice(&mt_chan[3], &g_pCustom->aud[3], &pLineVoices[3]);
+#endif // AMIGA
 		}
 		else {
 			// we have a pattern delay, check effects then step
+#ifdef AMIGA
 			mt_checkfx(&mt_chan[0], &g_pCustom->aud[0]);
 			mt_checkfx(&mt_chan[1], &g_pCustom->aud[1]);
 			mt_checkfx(&mt_chan[2], &g_pCustom->aud[2]);
 			mt_checkfx(&mt_chan[3], &g_pCustom->aud[3]);
+#endif // AMIGA
 		}
 		// set one-shot TimerB interrupt for enabling DMA, when needed
 		if(mt_dmaon) {
 			ptplayerEnableMainHandler(0);
-			systemSetCiaInt(CIA_B, CIAICRB_TIMER_B, mt_TimerBdmaon, 0);
+			#ifdef AMIGA
+systemSetCiaInt(CIA_B, CIAICRB_TIMER_B, mt_TimerBdmaon, 0);
 			g_pCia[CIA_B]->crb = CIACRB_LOAD | CIACRB_RUNMODE | CIACRB_START; // load/start timer B, one-shot
+#endif // AMIGA
 		}
 
 		// next pattern line, handle delay and break
@@ -1507,12 +1547,15 @@ static void mt_music(void) {
 // Stop playing current module.
 void ptplayerStop(void) {
 	ptplayerEnableMusic(0);
-	g_pCustom->aud[0].ac_vol = 0;
+	#ifdef AMIGA
+g_pCustom->aud[0].ac_vol = 0;
 	g_pCustom->aud[1].ac_vol = 0;
 	g_pCustom->aud[2].ac_vol = 0;
 	g_pCustom->aud[3].ac_vol = 0;
 	systemSetDmaMask(DMAF_AUDIO, 0);
-	s_pModCurr = 0;
+	
+#endif // AMIGA
+s_pModCurr = 0;
 }
 
 static void mt_reset(void) {
@@ -1528,7 +1571,9 @@ static void mt_reset(void) {
 #endif
 
 	// Disable the filter
+#ifdef AMIGA
 	g_pCia[CIA_A]->pra |= BV(1);
+#endif // AMIGA
 
 	// set master volume to 64
 	mt_MasterVolTab = MasterVolTab[64];
@@ -1537,7 +1582,9 @@ static void mt_reset(void) {
 	// make sure n_period doesn't start as 0
 	// disable sound effects
 	for(UBYTE i = 4; i--;) {
+#ifdef AMIGA
 		mt_chan[i].n_dmabit = 1 << (DMAB_AUD0 + i);
+#endif
 	#if defined(PTPLAYER_USE_AUDIO_INT_HANDLERS)
 		mt_chan[i].uwChannelIdx = i;
 		mt_chan[i].pDoneBit = &s_uChannelDone.pChannels[i];
@@ -1553,7 +1600,9 @@ static void mt_reset(void) {
 
 static inline void setTempo(UWORD uwTempo) {
 #if !defined(PTPLAYER_USE_VBL)
-	systemSetTimer(CIA_B, 0, mt_timerval / uwTempo);
+	#ifdef AMIGA
+systemSetTimer(CIA_B, 0, mt_timerval / uwTempo);
+#endif // AMIGA
 #endif
 }
 
@@ -1569,8 +1618,10 @@ static void INTERRUPT onAudio(
 		// This is to prevent repeatedly triggering audio interrupt and slowing
 		// Amiga down after sfx playback.
 		s_pAudioChannelPendingDisable[ubChannelIdx] = 0;
-		systemSetDmaMask(DMAF_AUD0 << ubChannelIdx, 0);
+		#ifdef AMIGA
+systemSetDmaMask(DMAF_AUD0 << ubChannelIdx, 0);
 		pCustom->aud[ubChannelIdx].ac_dat = 0;
+#endif // AMIGA
 	}
 };
 #endif
@@ -1579,9 +1630,12 @@ void ptplayerDestroy(void) {
 	ptplayerStop();
 	// Disable handling of music
 	ptplayerEnableMusic(0);
-	systemSetCiaInt(CIA_B, 0, 0, 0);
+	#ifdef AMIGA
+systemSetCiaInt(CIA_B, 0, 0, 0);
 	systemSetCiaInt(CIA_B, 1, 0, 0);
-	// systemSetInt(INTB_AUD0, 0, 0);
+	
+#endif // AMIGA
+// systemSetInt(INTB_AUD0, 0, 0);
 	// systemSetInt(INTB_AUD1, 0, 0);
 	// systemSetInt(INTB_AUD2, 0, 0);
 	// systemSetInt(INTB_AUD3, 0, 0);
@@ -1604,14 +1658,21 @@ void ptplayerCreate(UBYTE isPal) {
 #endif
 
 	// disable CIA B interrupts, set player interrupt vector
+#ifdef AMIGA
 	g_pCustom->intena = INTF_EXTER;
+#endif // AMIGA
 	ptplayerEnableMainHandler(1);
+#ifdef AMIGA
 	systemSetCiaInt(CIA_B, CIAICRB_TIMER_B, 0, 0);
+#endif // AMIGA
 #if defined(PTPLAYER_USE_AUDIO_INT_HANDLERS)
-	systemSetInt(INTB_AUD0, onAudio, (void*)0);
+
+	#ifdef AMIGA
+systemSetInt(INTB_AUD0, onAudio, (void*)0);
 	systemSetInt(INTB_AUD1, onAudio, (void*)1);
 	systemSetInt(INTB_AUD2, onAudio, (void*)2);
 	systemSetInt(INTB_AUD3, onAudio, (void*)3);
+#endif // AMIGA
 #endif
 
 	// determine if 02 clock for timers is based on PAL or NTSC
@@ -1630,14 +1691,20 @@ void ptplayerCreate(UBYTE isPal) {
 	//Load TimerA in continuous mode for the default tempo of 125
 	setTempo(125);
 #if !defined(PTPLAYER_USE_VBL)
+#ifdef AMIGA
 	g_pCia[CIA_B]->cra = CIACRA_LOAD | CIACRA_START; // load timer, start continuous
+#endif // AMIGA
 #endif
 
 	// Load TimerB with 576 ticks for setting DMA and repeat
+#ifdef AMIGA
 	systemSetTimer(CIA_B, 1, 576);
+#endif // AMIGA
 
 	// Enable CIA B interrupts
-	g_pCustom->intena = INTF_SETCLR | INTF_EXTER;
+	#ifdef AMIGA
+g_pCustom->intena = INTF_SETCLR | INTF_EXTER;
+#endif // AMIGA
 
 	mt_reset();
 }
@@ -1711,19 +1778,27 @@ void ptplayerLoadMod(
 }
 
 void ptplayerSetMusicChannelMask(UBYTE ChannelMask) {
+#ifdef AMIGA
 	g_pCustom->intena = INTF_INTEN;
+#endif // AMIGA
 	mt_chan[0].n_musiconly = BTST(ChannelMask, 0);
 	mt_chan[1].n_musiconly = BTST(ChannelMask, 1);
 	mt_chan[2].n_musiconly = BTST(ChannelMask, 2);
 	mt_chan[3].n_musiconly = BTST(ChannelMask, 3);
 
-	g_pCustom->intena = INTF_SETCLR | INTF_INTEN;
+	#ifdef AMIGA
+g_pCustom->intena = INTF_SETCLR | INTF_INTEN;
+#endif // AMIGA
 }
 
 void ptplayerSetMasterVolume(UBYTE ubMasterVolume) {
+#ifdef AMIGA
 	g_pCustom->intena = INTF_INTEN;
 	mt_MasterVolTab = MasterVolTab[ubMasterVolume];
 	g_pCustom->intena = INTF_SETCLR | INTF_INTEN;
+#else
+	mt_MasterVolTab = MasterVolTab[ubMasterVolume];
+#endif // AMIGA
 }
 
 //-------------------------------------------------- COMMANDS WITHOUT CMD PASSED
@@ -2120,7 +2195,17 @@ static void mt_volchange(
 }
 
 static const tFx blmorefx_tab[16] = {
-	[0 ... 10] = mt_nop,
+	[0] = mt_nop,
+	[1] = mt_nop,
+	[2] = mt_nop,
+	[3] = mt_nop,
+	[4] = mt_nop,
+	[5] = mt_nop,
+	[6] = mt_nop,
+	[7] = mt_nop,
+	[8] = mt_nop,
+	[9] = mt_nop,
+	[10] = mt_nop,
 	[11] = mt_posjump, // 0xB
 	[13] = mt_patternbrk, // 0xD
 	[14] = blocked_e_cmds,
@@ -2128,7 +2213,17 @@ static const tFx blmorefx_tab[16] = {
 };
 
 static const tFx morefx_tab[16] = {
-	[0 ... 10] = mt_pernop,
+		[0] = mt_pernop,
+	[1] = mt_pernop,
+	[2] = mt_pernop,
+	[3] = mt_pernop,
+	[4] = mt_pernop,
+	[5] = mt_pernop,
+	[6] = mt_pernop,
+	[7] = mt_pernop,
+	[8] = mt_pernop,
+	[9] = mt_pernop,
+	[10] = mt_pernop,
 	[11] = mt_posjump,
 	[12] = mt_volchange,
 	[13] = mt_patternbrk,
@@ -2142,13 +2237,15 @@ static void mt_filter(
 	UBYTE ubArg, UNUSED_ARG tChannelStatus *pChannelData,
 	UNUSED_ARG volatile tChannelRegs *pChannelReg
 ) {
-	// cmd 0x0E'0X (x=1 disable, x=0 enable)
+	#ifdef AMIGA
+// cmd 0x0E'0X (x=1 disable, x=0 enable)
 	if(ubArg & 1) {
 		g_pCia[CIA_A]->pra |= BV(1);
 	}
 	else {
 		g_pCia[CIA_A]->pra &= ~BV(1);
 	}
+#endif // AMIGA
 }
 
 static void mt_fineportaup(
@@ -2497,13 +2594,21 @@ static void set_toneporta(
 }
 
 static const tPreFx prefx_tab[16] = {
-	[0 ... 2] = set_period,
+	[0] = set_period,
+	[1] = set_period,
+	[2] = set_period,
 	[3] = set_toneporta,
 	[4] = set_period,
 	[5] = set_toneporta,
-	[6 ... 8] = set_period,
+	[6] = set_period,
+	[7] = set_period,
+	[8] = set_period,
 	[9] = set_sampleoffset,
-	[0xA ... 0xF] = set_period,
+	[0xA] = set_period,
+	[0xB] = set_period,
+	[0xC] = set_period,
+	[0xD] = set_period,
+	[0xF] = set_period,
 };
 
 void ptplayerProcess(void) {
@@ -2685,11 +2790,15 @@ void ptplayerSfxPlay(
 		tChannelStatus *pChannel = pChannels[bChannel];
 
 		// Priority high enough to replace a present effect on this channel?
-		g_pCustom->intena = INTF_INTEN;
+		#ifdef AMIGA
+g_pCustom->intena = INTF_INTEN;
+#endif // AMIGA
 		if(ubPriority >= pChannel->ubSfxPriority) {
 			channelSetSfx(pChannel, pSfx, ubVolume, ubPriority);
 		}
-		g_pCustom->intena = INTF_SETCLR | INTF_INTEN;
+		#ifdef AMIGA
+g_pCustom->intena = INTF_SETCLR | INTF_INTEN;
+#endif // AMIGA
 		return;
 	}
 	// Did we already calculate the n_freecnt values for all channels?
@@ -2755,7 +2864,9 @@ void ptplayerSfxPlay(
 		mt_SilCntValid = 1;
 	}
 
-	g_pCustom->intena = INTF_INTEN;
+	#ifdef AMIGA
+g_pCustom->intena = INTF_INTEN;
+#endif // AMIGA
 
 	// Determine which channels are already allocated for sound
 	// effects and check if the limit was reached. In this case only
@@ -2822,7 +2933,9 @@ void ptplayerSfxPlay(
 	if(pBestChannel) {
 		channelSetSfx(pBestChannel, pSfx, ubVolume, ubPriority);
 	}
-	g_pCustom->intena = INTF_SETCLR | INTF_INTEN;
+	#ifdef AMIGA
+g_pCustom->intena = INTF_SETCLR | INTF_INTEN;
+#endif // AMIGA
 }
 
 void ptplayerWaitForSfx(void) {

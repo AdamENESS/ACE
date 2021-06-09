@@ -6,8 +6,9 @@
 #include <ace/macros.h>
 #include <ace/managers/blit.h>
 #include <ace/utils/tag.h>
+#ifdef AMIGA
 #include <proto/exec.h> // Bartman's compiler needs this
-
+#endif
 static UBYTE shiftFromPowerOfTwo(UWORD uwPot) {
 	UBYTE ubPower = 0;
 	while(uwPot > 1) {

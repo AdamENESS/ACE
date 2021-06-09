@@ -9,7 +9,6 @@
 
 /* Globals */
 tMouseManager g_sMouseManager;
-
 /* Functions */
 void mouseCreate(UBYTE ubPortFlags) {
 	memset(&g_sMouseManager, 0, sizeof(tMouseManager));
@@ -51,9 +50,11 @@ void mouseDestroy(void) {
 }
 
 static void mouseProcessPort(
+
 	UBYTE ubPort, UWORD uwPosReg,
 	UBYTE ubStateLmb, UBYTE ubStateRmb, UBYTE ubStateMmb
 ) {
+#ifdef AMIGA
 	// Deltas are signed bytes even though underflows and overflows may occur.
 	// It is expected behavior since it is encouraged in Amiga HRM as means to
 	// determine mouse movement direction which takes into account joyxdat
@@ -92,6 +93,7 @@ static void mouseProcessPort(
 	else if(!mouseCheck(ubPort, MOUSE_MMB)) {
 		mouseSetButton(ubPort, MOUSE_MMB, MOUSE_ACTIVE);
 	}
+#endif
 }
 
 void mouseProcess(void) {

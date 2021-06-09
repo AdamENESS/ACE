@@ -10,6 +10,7 @@ typedef struct _tChannelControls {
 } tChannelControls;
 
 tChannelControls s_pControls[4];
+#ifdef AMIGA
 
 void INTERRUPT audioIntHandler(
 	UNUSED_ARG REGARG(volatile tCustom *pCustom, "a0"),
@@ -70,7 +71,8 @@ void audioStop(UBYTE ubChannel) {
 	// Volume to zero for given channel
 	g_pCustom->aud[ubChannel].ac_vol = 0;
 }
-
+#else
+#endif
 tSample *sampleCreate(UWORD uwLength, UWORD uwPeriod) {
 	logBlockBegin("sampleCreate(uwLength: %hu, uwPeriod: %hu)", uwLength, uwPeriod);
 	tSample *pSample = memAllocFast(sizeof(tSample));

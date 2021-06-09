@@ -9,7 +9,6 @@
 extern "C" {
 #endif
 
-#ifdef AMIGA
 
 /**
  *  Buffer with naive scrolling techniques. Uses loadsa CHIP RAM but there
@@ -40,7 +39,9 @@ typedef struct _tSimpleBufferManager {
 	// scroll-specific fields
 	tBitMap *pFront;       ///< Currently displayed buffer.
 	tBitMap *pBack;        ///< Buffer for drawing.
+	#ifdef AMIGA
 	tCopBlock *pCopBlock;  ///< CopBlock containing modulo/shift/bitplane cmds
+	#endif // AMIGA
 	tUwCoordYX uBfrBounds; ///< Buffer bounds in pixels
 	UBYTE ubFlags;         ///< Read only. See SIMPLEBUFFER_FLAG_*.
 	UWORD uwCopperOffset;  ///< Offset on copperlist in COP_RAW mode.
@@ -84,7 +85,6 @@ UBYTE simpleBufferIsRectVisible(
 
 UBYTE simpleBufferGetRawCopperlistInstructionCount(UBYTE ubBpp);
 
-#endif // AMIGA
 
 #ifdef __cplusplus
 }

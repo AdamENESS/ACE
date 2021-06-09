@@ -555,6 +555,7 @@ void blitLine(
 		g_pCustom->bltsize = uwBltSize;
 	}
 #else
-#error "Unimplemented: blitLine()"
+
+
 #endif // AMIGa
 }

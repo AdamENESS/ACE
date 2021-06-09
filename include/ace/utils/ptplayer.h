@@ -35,6 +35,14 @@ typedef struct _tPtplayerMod {
 	// TODO: move some vars from ptplayer here
 } tPtplayerMod;
 
+#if !defined(AMIGA)
+#define INTF_AUD0 0
+#define INTF_AUD1 1
+#define INTF_AUD2 2
+#define INTF_AUD3 3
+#define INTF_AUD4 4
+#endif
+
 typedef void (*tPtplayerCbSongEnd)(void);
 
 /**

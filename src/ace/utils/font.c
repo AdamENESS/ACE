@@ -2,7 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#ifdef AMIGA
 #include <proto/graphics.h> // Bartman's compiler needs this
+#endif
 #include <ace/managers/system.h>
 #include <ace/utils/font.h>
 #include <ace/utils/file.h>
@@ -270,7 +272,7 @@ void fontDrawTextBitMap(
 	s_sTmpDest.Rows = pDest->Rows;
 	s_sTmpDest.Depth = 1;
 #else
-#error "Something is missing here!"
+//#error "Something is missing here!"
 #endif
 
 	// Text-drawing loop

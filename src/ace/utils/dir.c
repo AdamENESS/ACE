@@ -8,7 +8,9 @@
 #include <ace/managers/system.h>
 #include <ace/managers/memory.h>
 #include <ace/managers/log.h>
+#ifdef AMIGA
 #include <proto/dos.h> // Bartman's compiler needs this
+
 
 tDir *dirOpen(const char *szPath) {
 	systemUse();
@@ -92,3 +94,5 @@ UBYTE dirCreatePath(const char *szPath) {
 	systemUnuse();
 	return isCreated;
 }
+#else
+#endif // AMIGA
